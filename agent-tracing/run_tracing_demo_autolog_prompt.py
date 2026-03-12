@@ -65,18 +65,18 @@ from traced_agent import (
 # PROMPT REGISTRY
 # =============================================================================
 
-def load_prompt_from_registry(language: str = "en", version: int = None) -> str:
+def load_prompt_from_registry(language: str = "en", version: int = None):
     """
     Load system prompt from MLflow Prompt Registry.
 
     Args:
         language: "en", "es", or "bilingual"
-        version: Specific version number (None = latest)
+        version: Specific version number (None = latest version 1)
                  When version is specified, loads from unified "agent-system-prompt"
                  (v1=English, v2=Bilingual)
 
     Returns:
-        Prompt template string
+        Tuple of (prompt_template_string, prompt_uri) for trace linking
     """
     # If version is specified, use the unified versioned prompt
     if version:
@@ -84,14 +84,14 @@ def load_prompt_from_registry(language: str = "en", version: int = None) -> str:
         uri = f"prompts:/{prompt_name}/{version}"
         version_desc = f"v{version} ({'English' if version == 1 else 'Bilingual' if version == 2 else 'custom'})"
     else:
-        # Use language-specific prompts
+        # Use language-specific prompts with version 1 (not "latest" which isn't supported)
         prompt_names = {
             "en": "agent-system-prompt-en",
             "es": "agent-system-prompt-es",
             "bilingual": "agent-system-prompt-bilingual",
         }
         prompt_name = prompt_names.get(language, "agent-system-prompt-en")
-        uri = f"prompts:/{prompt_name}/latest"
+        uri = f"prompts:/{prompt_name}/1"  # Use version 1 instead of "latest"
         version_desc = None
 
     try:
@@ -100,11 +100,12 @@ def load_prompt_from_registry(language: str = "en", version: int = None) -> str:
             print(f"✓ Loaded prompt: {prompt_name} {version_desc}")
         else:
             print(f"✓ Loaded prompt: {prompt_name} (version {prompt.version})")
-        return prompt.template
+        # Return both template and the URI for trace linking
+        return prompt.template, f"prompts:/{prompt_name}/{prompt.version}"
     except Exception as e:
         print(f"⚠ Could not load prompt from registry: {e}")
         print("  Falling back to default prompt")
-        return DEFAULT_SYSTEM_PROMPT
+        return DEFAULT_SYSTEM_PROMPT, None
 
 
 # =============================================================================
@@ -185,18 +186,41 @@ def get_queries(language: str, mcp_enabled: bool, queries_lang: str = None) -> l
     return queries
 
 
-async def run_queries(agent, queries: list):
-    """Run queries - autolog captures everything automatically."""
+@mlflow.trace(name="agent_query")
+async def run_single_query(agent, query: str, prompt_uri: str = None):
+    """
+    Run a single query with MLflow tracing.
+
+    The @mlflow.trace decorator creates a trace, and loading the prompt
+    inside this traced function automatically links the trace to the prompt.
+    """
+    # Re-load the prompt inside the traced function to create automatic linkage
+    if prompt_uri:
+        # This creates the automatic link between trace and prompt
+        mlflow.genai.load_prompt(prompt_uri)
+
+    result = await agent.ainvoke(
+        {"messages": [{"role": "user", "content": query}]}
+    )
+    return result["messages"][-1].content
+
+
+async def run_queries(agent, queries: list, prompt_uri: str = None):
+    """
+    Run queries - traces are automatically linked to prompts.
+
+    Args:
+        agent: The LangGraph agent
+        queries: List of queries to run
+        prompt_uri: MLflow prompt URI to link traces (e.g., "prompts:/agent-system-prompt/2")
+    """
     for i, query in enumerate(queries, 1):
         print(f"\n{'='*60}")
         print(f"Query {i}: {query}")
         print("=" * 60)
 
         try:
-            result = await agent.ainvoke(
-                {"messages": [{"role": "user", "content": query}]}
-            )
-            response = result["messages"][-1].content
+            response = await run_single_query(agent, query, prompt_uri)
             print(f"\nResponse:\n{response}")
         except Exception as e:
             print(f"\nError: {e}")
@@ -243,7 +267,7 @@ async def main():
 
     # Load prompt from registry
     print(f"\nLanguage: {args.lang}")
-    system_prompt = load_prompt_from_registry(args.lang, args.prompt_version)
+    system_prompt, prompt_uri = load_prompt_from_registry(args.lang, args.prompt_version)
 
     config = get_config_from_env()
     mcp_config = get_mcp_config_from_env()
@@ -273,7 +297,7 @@ async def main():
         print(f"Query language: {args.queries_lang}")
     queries = get_queries(args.lang, mcp_client is not None, args.queries_lang)
 
-    await run_queries(agent, queries)
+    await run_queries(agent, queries, prompt_uri)
 
 
 if __name__ == "__main__":

@@ -130,6 +130,20 @@ Open the URL and navigate to the **Traces** tab.
 
 The MLflow UI is also accessible from the OpenShift console Applications menu or the RHOAI dashboard.
 
+### MLflow Tracing UI
+
+View all traces with request/response details, token usage, and execution times:
+
+![Traces List View](../docs/tracing1.png)
+
+Inspect trace breakdown showing LangGraph execution hierarchy:
+
+![Trace Breakdown View](../docs/tracing2.png)
+
+View evaluation runs with aggregated metrics:
+
+![Evaluation Runs View](../docs/tracing3.png)
+
 ## Tool Integrations
 
 ### Calculator
@@ -163,41 +177,6 @@ Example: "Find me a direct flight from San Francisco to Tokyo on March 31st"
 | `MLFLOW_EXPERIMENT_NAME` | Experiment name | `langchain-agent-tracing` |
 | `MCP_SERVER_ENABLED` | Enable MCP tools | `true` |
 | `MCP_SERVER_URL` | MCP server URL | `https://mcp.kiwi.com` |
-
-## MCP Integration
-
-The agent connects to the **Kiwi MCP server** for travel/flight searches:
-
-```python
-from langchain_mcp_adapters.client import MultiServerMCPClient
-
-client = MultiServerMCPClient({
-    "travel": {
-        "url": "https://mcp.kiwi.com",
-        "transport": "streamable_http",
-    }
-})
-tools = await client.get_tools()
-```
-
-Example queries with MCP:
-- "Find me a direct flight from San Francisco to Tokyo on March 31st"
-- "Search for flights from London to Paris next week"
-- "What are the cheapest flights to Barcelona?"
-
-## Adding Custom Tools
-
-```python
-from langchain_core.tools import tool
-
-@tool
-def my_tool(param: str) -> str:
-    """Tool description for the LLM."""
-    return f"Result: {param}"
-
-# Add to LOCAL_TOOLS in traced_agent.py
-LOCAL_TOOLS = [calculator, get_weather, search, my_tool]
-```
 
 ## MLflow Prompt Registry
 

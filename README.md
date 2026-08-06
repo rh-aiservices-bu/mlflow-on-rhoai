@@ -15,7 +15,7 @@ MLflow is an open-source platform for managing the end-to-end machine learning l
 
 ### Enable the MLflow Operator
 
-Enable the MLflow operator through the RHOAI 3.2+ Platform operator:
+Enable the MLflow operator through the RHOAI 3.4+ Platform operator:
 
 ```bash
 kubectl patch datasciencecluster default-dsc \
@@ -48,7 +48,7 @@ spec:
 EOF
 ```
 
-> **Note:** This works from RHOAI 3.2 onwards.
+> **Note:** MLflow is Generally Available (GA) from RHOAI 3.4 onwards.
 
 ### Access MLflow UI
 
@@ -119,7 +119,7 @@ Metrics include:
 - **has_numeric_result**: Whether the response includes numeric values
 - **response_length**: Score based on response verbosity
 
-> **NOTE:** The trace breakdown view showing detailed spans requires **MLflow 3.9+**. This is **not available in RHOAI 3.2** due to gateway limitations that don't expose the `/api/2.0/mlflow/traces/get` endpoint. The screenshots below are from an ODH MLflow 3.9 deployment.
+> **NOTE:** The trace breakdown view showing detailed spans requires **MLflow 3.9+** and is available in **RHOAI 3.4+**, which ships MLflow as GA.
 
 ---
 

@@ -15,7 +15,7 @@ MLflow is an open-source platform for managing the end-to-end machine learning l
 
 ### Enable the MLflow Operator
 
-Enable the MLflow operator through the RHOAI 3.2+ Platform operator:
+Enable the MLflow operator through the RHOAI 3.4+ Platform operator:
 
 ```bash
 kubectl patch datasciencecluster default-dsc \
@@ -48,7 +48,7 @@ spec:
 EOF
 ```
 
-> **Note:** This works from RHOAI 3.2 onwards.
+> **Note:** MLflow is Generally Available (GA) from RHOAI 3.4 onwards.
 
 ### Access MLflow UI
 

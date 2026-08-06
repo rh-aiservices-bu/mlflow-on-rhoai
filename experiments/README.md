@@ -25,8 +25,8 @@ Create a new Python virtualenv and install the MLflow SDK:
 python -m venv mlflow-venv
 source mlflow-venv/bin/activate
 
-# For RHOAI 3.2 or 3.3
-pip install "git+https://github.com/red-hat-data-services/mlflow@rhoai-3.3"
+# For RHOAI 3.4+
+pip install "git+https://github.com/red-hat-data-services/mlflow@rhoai-3.4"
 ```
 
 ## Quick Start
